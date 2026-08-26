@@ -8,4 +8,8 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
+    return {"message": "backend running", "status": "ok"}
+
+@app.get("/health")
+async def health_check():
     return {"message": "CyberSentinel API is running", "status": "ok"}
