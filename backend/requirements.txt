@@ -18,3 +18,4 @@ python-multipart>=0.0.9
 
 # Utility
 python-dotenv>=1.0.1
+certifi>=2024.2.2
