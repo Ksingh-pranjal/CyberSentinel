@@ -92,6 +92,17 @@ def train_and_evaluate_model(force_reprocess: bool = False, contamination: float
     top_5 = results_df[results_df['is_anomaly'] == 1].sort_values('anomaly_score').head(5)
     print(top_5[profile_cols + ['anomaly_score']])
 
+    # --- Step 5.5: Export Flagged Anomalies for Review ---
+    # Filter only the anomalies and save them to a CSV
+    anomalies_df = results_df[results_df['is_anomaly'] == 1].copy()
+    
+    # Sort them by how extreme they are (most anomalous first)
+    anomalies_df = anomalies_df.sort_values('anomaly_score')
+    
+    export_path = os.path.join(processed_dir, 'flagged_anomalies_test_set.csv')
+    anomalies_df.to_csv(export_path, index=False)
+    print(f"\nExported {len(anomalies_df)} flagged anomalies for review to: {export_path}")
+
     # Step 6: Save Model Artifact
     os.makedirs(model_dir, exist_ok=True)
     model_payload = {
