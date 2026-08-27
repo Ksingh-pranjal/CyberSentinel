@@ -1,5 +1,7 @@
 # Environment variables
 .env
+atlas-credentials.env
+*/__pycache__/*
 
 # Python cache files
 __pycache__/
