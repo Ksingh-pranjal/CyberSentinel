@@ -1,2 +1,20 @@
-FastAPI
-Uvicorn
+# Web Framework & Server
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+
+# Database & Async Drivers
+motor>=3.3.2
+pymongo>=4.6.2
+
+# Data Validation & Settings
+pydantic>=2.6.4
+pydantic-settings>=2.2.1
+email-validator>=2.1.1
+
+# Security & Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.9
+
+# Utility
+python-dotenv>=1.0.1
