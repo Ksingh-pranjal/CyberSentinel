@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import jwt
-from typing import List
+from jose import jwt
+from typing import List, Optional
 from app.schemas.auth import TokenData
 from app.auth.security import SECRET_KEY, ALGORITHM
 
@@ -16,8 +16,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        role: str = payload.get("role")
+        username: Optional[str] = payload.get("sub")
+        role: Optional[str] = payload.get("role")
         if username is None or role is None:
             raise credentials_exception
         return TokenData(username=username, role=role)
