@@ -77,7 +77,7 @@ def assign_crime_category(row):
     else:
         return 'routine_transaction'
 
-def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_ratio=0.70, val_ratio=0.15):
+def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_ratio=0.80):
     print(f"Reading raw dataset from: {raw_csv_path}")
     df = pd.read_csv(raw_csv_path)
 
@@ -243,69 +243,41 @@ def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_r
 
     # Select final requested columns in exact order
     final_columns = [
-        'location_id',
-        'latitude',
-        'longitude',
-        'prediction_time',
-        'crime_category',
-        'transaction_amount',
-        'recent_txn_count',
-        'recent_withdrawal_count',
-        'distance_to_recent_withdrawal_km',
-        'dist_from_last_txn_km',
-        'minutes_since_last_txn',
-        'withdrawals_past_1h',
-        'withdrawals_past_24h',
-        'location_density_30d',
-        'historical_location_risk',
-        'login_attempts',
-        'transaction_duration',
-        'customer_age',
-        'account_balance',
-        'hour',
-        'day_of_week',
-        'withdrawal_occurred'
+        'location_id', 'latitude', 'longitude', 'prediction_time', 'crime_category',
+        'transaction_amount', 'recent_txn_count', 'recent_withdrawal_count',
+        'distance_to_recent_withdrawal_km', 'dist_from_last_txn_km', 'minutes_since_last_txn',
+        'withdrawals_past_1h', 'withdrawals_past_24h', 'location_density_30d',
+        'historical_location_risk', 'login_attempts', 'transaction_duration',
+        'customer_age', 'account_balance', 'hour', 'day_of_week', 'withdrawal_occurred'
     ]
 
     processed_df = df[final_columns].copy()
     processed_df['prediction_time'] = processed_df['prediction_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Chronological Train (70%), Validation (15%), Test (15%) Split
+    # Chronological Train (80%) and Test (20%) Split
     n_total = len(processed_df)
     train_end = int(n_total * train_ratio)
-    val_end = int(n_total * (train_ratio + val_ratio))
 
     train_df = processed_df.iloc[:train_end].copy()
-    val_df = processed_df.iloc[train_end:val_end].copy()
-    test_df = processed_df.iloc[val_end:].copy()
+    test_df = processed_df.iloc[train_end:].copy()
 
     os.makedirs(output_dir, exist_ok=True)
     full_path = os.path.join(output_dir, 'training_data.csv')
     train_path = os.path.join(output_dir, 'train_data.csv')
-    val_path = os.path.join(output_dir, 'val_data.csv')
     test_path = os.path.join(output_dir, 'test_data.csv')
 
     processed_df.to_csv(full_path, index=False)
     train_df.to_csv(train_path, index=False)
-    val_df.to_csv(val_path, index=False)
     test_df.to_csv(test_path, index=False)
 
     print(f"\n--- Preprocessing & Data Splitting Complete ---")
     print(f"Full Dataset: {len(processed_df)} records -> {full_path}")
-    print(f"Train Split:  {len(train_df)} records ({train_df['prediction_time'].min()} to {train_df['prediction_time'].max()}) -> {train_path}")
-    print(f"Val Split:    {len(val_df)} records ({val_df['prediction_time'].min()} to {val_df['prediction_time'].max()}) -> {val_path}")
-    print(f"Test Split:   {len(test_df)} records ({test_df['prediction_time'].min()} to {test_df['prediction_time'].max()}) -> {test_path}")
-
-    print("\n--- Target Breakdown across Splits (withdrawal_occurred) ---")
-    print("Train Target %:")
-    print(train_df['withdrawal_occurred'].value_counts(normalize=True))
-    print("Val Target %:")
-    print(val_df['withdrawal_occurred'].value_counts(normalize=True))
-    print("Test Target %:")
-    print(test_df['withdrawal_occurred'].value_counts(normalize=True))
+    print(f"Train Split (80%): {len(train_df)} records -> {train_path}")
+    print(f"Test Split (20%):  {len(test_df)} records -> {test_path}")
 
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     raw_path = os.path.join(base_dir, 'data', 'raw', 'bank_transactions_data_2_augmented_clean_2.csv')
     processed_dir = os.path.join(base_dir, 'data', 'processed')
-    preprocess_pipeline(raw_path, processed_dir)
+    # Use 80% train split
+    preprocess_pipeline(raw_path, processed_dir, train_ratio=0.80)

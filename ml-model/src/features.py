@@ -98,41 +98,33 @@ def extract_features(df):
 
 def load_feature_splits(processed_dir):
     """
-    Loads train_data.csv, val_data.csv, and test_data.csv and applies feature extraction.
+    Loads train_data.csv and test_data.csv and applies feature extraction.
     
     Returns:
-        X_train, y_train, X_val, y_val, X_test, y_test, feature_names
+        X_train, y_train, X_test, y_test, feature_names
     """
     train_path = os.path.join(processed_dir, 'train_data.csv')
-    val_path = os.path.join(processed_dir, 'val_data.csv')
     test_path = os.path.join(processed_dir, 'test_data.csv')
 
     print(f"Loading split files from {processed_dir}...")
     df_train = pd.read_csv(train_path)
-    df_val = pd.read_csv(val_path)
     df_test = pd.read_csv(test_path)
 
     X_train, y_train = extract_features(df_train)
-    X_val, y_val = extract_features(df_val)
     X_test, y_test = extract_features(df_test)
 
     feature_names = list(X_train.columns)
 
-    return X_train, y_train, X_val, y_val, X_test, y_test, feature_names
+    return X_train, y_train, X_test, y_test, feature_names
 
 if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     processed_dir = os.path.join(base_dir, 'data', 'processed')
     
-    X_train, y_train, X_val, y_val, X_test, y_test, feature_names = load_feature_splits(processed_dir)
+    X_train, y_train, X_test, y_test, feature_names = load_feature_splits(processed_dir)
     
     print("\n--- Features Pipeline Execution Successful ---")
     print(f"Features Count: {len(feature_names)}")
-    print(f"Feature Names: {feature_names}")
-    print(f"\nTrain Feature Matrix Shape: {X_train.shape}, Target Shape: {y_train.shape}")
-    print(f"Val Feature Matrix Shape:   {X_val.shape}, Target Shape: {y_val.shape}")
-    print(f"Test Feature Matrix Shape:  {X_test.shape}, Target Shape: {y_test.shape}")
-    
-    print("\n--- Feature Correlations with Target (withdrawal_occurred - Train) ---")
-    corrs = X_train.corrwith(y_train).sort_values(ascending=False)
-    print(corrs)
+    print(f"\nTrain Feature Matrix Shape: {X_train.shape}")
+    print(f"Test Feature Matrix Shape:  {X_test.shape}")
+
