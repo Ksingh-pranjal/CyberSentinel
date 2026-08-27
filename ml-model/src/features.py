@@ -33,11 +33,9 @@ def extract_features(df):
     data['is_weekend'] = (data['day_of_week'] >= 5).astype(int)
 
     # 2. Transaction Activity Ratios & Scaled Features
-    # Ratio of withdrawal count to total transaction count in trailing window
     data['withdrawal_ratio'] = data['recent_withdrawal_count'] / (data['recent_txn_count'] + 1.0)
-    
-    # Log-transformed transaction amount for scale stability
-    data['log_transaction_amount'] = np.log1p(data['transaction_amount'])
+    data['log_transaction_amount'] = np.log1p(np.maximum(0, data['transaction_amount']))
+    data['log_account_balance'] = np.log1p(np.maximum(0, data['account_balance']))
 
     # 3. Categorical Encoding for crime_category
     for cat in CRIME_CATEGORIES:
@@ -47,16 +45,40 @@ def extract_features(df):
     if 'location_id' in data.columns:
         data['location_numeric_id'] = data['location_id'].str.replace('LOC_', '').astype(int)
 
+    # Fill any NaNs safely
+    fill_defaults = {
+        'withdrawals_past_1h': 0,
+        'withdrawals_past_24h': 0,
+        'minutes_since_last_txn': 9999.0,
+        'dist_from_last_txn_km': 0.0,
+        'location_density_30d': 0,
+        'login_attempts': 1,
+        'transaction_duration': 0,
+        'customer_age': 30
+    }
+    for col, default_val in fill_defaults.items():
+        if col in data.columns:
+            data[col] = data[col].fillna(default_val)
+
     # Select final numerical feature columns for model training
     feature_cols = [
         'latitude',
         'longitude',
         'log_transaction_amount',
+        'log_account_balance',
         'recent_txn_count',
         'recent_withdrawal_count',
         'withdrawal_ratio',
         'distance_to_recent_withdrawal_km',
+        'dist_from_last_txn_km',
+        'minutes_since_last_txn',
+        'withdrawals_past_1h',
+        'withdrawals_past_24h',
+        'location_density_30d',
         'historical_location_risk',
+        'login_attempts',
+        'transaction_duration',
+        'customer_age',
         'hour_sin',
         'hour_cos',
         'day_sin',
