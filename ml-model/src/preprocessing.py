@@ -159,8 +159,8 @@ def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_r
     unmapped = [c for c in unique_cities if c not in CITY_COORDINATES]
     if unmapped:
         print(f"  [WARN] {len(unmapped)} cities not in coordinate map (defaulting to 0.0,0.0): {unmapped}")
-    df['latitude']  = df['Location'].map(lambda loc: CITY_COORDINATES.get(loc, (0.0, 0.0))[0])
-    df['longitude'] = df['Location'].map(lambda loc: CITY_COORDINATES.get(loc, (0.0, 0.0))[1])
+    df['latitude']  = df['Location'].map(lambda loc: CITY_COORDINATES.get(str(loc), (0.0, 0.0))[0])
+    df['longitude'] = df['Location'].map(lambda loc: CITY_COORDINATES.get(str(loc), (0.0, 0.0))[1])
 
     # 3. Time Features
     df['hour']        = df['prediction_time'].dt.hour
@@ -169,7 +169,7 @@ def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_r
     # 4. Crime Category & Amount
     print("Assigning crime categories...")
     if HAS_TQDM:
-        df['crime_category'] = df.progress_apply(assign_crime_category, axis=1)
+        df['crime_category'] = df.progress_apply(assign_crime_category, axis=1)  # type: ignore[operator]
     else:
         df['crime_category'] = df.apply(assign_crime_category, axis=1)
     df['transaction_amount'] = df['TransactionAmount'].astype(float)
@@ -188,9 +188,9 @@ def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_r
     location_groups = list(df.groupby('location_id', sort=False))
     loc_iter = tqdm(location_groups, desc="  Locations", unit="loc") if HAS_TQDM else location_groups
     for loc_id, group in loc_iter:
-        times      = group['prediction_time'].values
-        withdrawals= group['is_withdrawal'].values.astype(int)
-        high_risks = group['is_high_risk'].values.astype(int)
+        times      = group['prediction_time'].to_numpy(dtype='datetime64[ns]')
+        withdrawals= group['is_withdrawal'].to_numpy().astype(int)
+        high_risks = group['is_high_risk'].to_numpy().astype(int)
         indices    = group.index.values
         n          = len(group)
         start_24h  = 0
@@ -234,10 +234,10 @@ def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_r
     account_groups = list(df.groupby('AccountID', sort=False))
     acc_iter = tqdm(account_groups, desc="  Accounts", unit="acc") if HAS_TQDM else account_groups
     for acc_id, group in acc_iter:
-        times      = group['prediction_time'].values
-        withdrawals= group['is_withdrawal'].values.astype(int)
-        lats       = group['latitude'].values
-        lngs       = group['longitude'].values
+        times      = group['prediction_time'].to_numpy(dtype='datetime64[ns]')
+        withdrawals= group['is_withdrawal'].to_numpy().astype(int)
+        lats       = group['latitude'].to_numpy()
+        lngs       = group['longitude'].to_numpy()
         indices    = group.index.values
         n          = len(group)
         start_1h   = 0
@@ -286,8 +286,8 @@ def preprocess_pipeline(raw_csv_path, output_dir, future_window_hours=3, train_r
 
     loc_iter2 = tqdm(location_groups, desc="  Target window", unit="loc") if HAS_TQDM else location_groups
     for loc_id, group in loc_iter2:
-        times      = group['prediction_time'].values
-        withdrawals= group['is_withdrawal'].values.astype(int)
+        times      = group['prediction_time'].to_numpy(dtype='datetime64[ns]')
+        withdrawals= group['is_withdrawal'].to_numpy().astype(int)
         indices    = group.index.values
         n          = len(group)
         end_idx    = 0
