@@ -1,27 +1,15 @@
 from fastapi import APIRouter, HTTPException, status
 from app.schemas.auth import UserLogin, Token
-from app.auth.security import create_access_token, verify_password, get_password_hash
+from app.auth.security import create_access_token, verify_password
+from app.db.mongo import get_database
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# Mock credentials store for early API route testing
-MOCK_USERS_DB = {
-    "officer@cybersentinel.gov": {
-        "username": "officer@cybersentinel.gov",
-        "password_hash": get_password_hash("officer123"),
-        "role": "LEA Officer"
-    },
-    "admin@cybersentinel.gov": {
-        "username": "admin@cybersentinel.gov",
-        "password_hash": get_password_hash("admin123"),
-        "role": "Admin"
-    }
-}
-
 @router.post("/login", response_model=Token)
-def login(credentials: UserLogin):
-    user = MOCK_USERS_DB.get(credentials.email)
-    if not user or not verify_password(credentials.password, user["password_hash"]):
+async def login(credentials: UserLogin):
+    db = get_database()
+    user = await db.users.find_one({"username": credentials.email})
+    if not user or not verify_password(credentials.password, user.get("password_hash", "")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
