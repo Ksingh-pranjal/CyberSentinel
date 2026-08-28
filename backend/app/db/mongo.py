@@ -11,12 +11,23 @@ db = DataBase()
 async def connect_to_mongo():
     # Pass tlsCAFile using certifi to resolve SSL handshake errors
     try:
-        db.client = AsyncIOMotorClient(
-            settings.mongodb_connection_string,
-            tlsCAFile=certifi.where()
-        )
-        # Ping database to verify connection
-        await db.client.admin.command('ping')
+        try:
+            db.client = AsyncIOMotorClient(
+                settings.mongodb_connection_string,
+                tlsCAFile=certifi.where(),
+                serverSelectionTimeoutMS=5000
+            )
+            # Ping database to verify connection
+            await db.client.admin.command('ping')
+        except Exception:
+            # Fallback for Windows environments with custom root certificates
+            db.client = AsyncIOMotorClient(
+                settings.mongodb_connection_string,
+                tlsCAFile=certifi.where(),
+                tlsAllowInvalidCertificates=True,
+                serverSelectionTimeoutMS=5000
+            )
+            await db.client.admin.command('ping')
         print("Connected to MongoDB database.")
     except Exception as e:
         print(f"Failed to connect to MongoDB: {str(e)}")
