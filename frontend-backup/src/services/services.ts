@@ -1,7 +1,0 @@
-import {alerts, cases, predictions, summary, users} from '../mocks/data'; import type {Alert,DashboardSummary,Filters,Prediction,Role,User} from '../types';
-const pause=<T,>(v:T)=>new Promise<T>(r=>setTimeout(()=>r(v),180));
-export const authService={login:async(email:string,password:string,role:Role):Promise<User>=>{const user=users.find(u=>u.email===email&&u.role===role); if(!user||password!=='demo123') throw new Error('Invalid credentials.'); localStorage.setItem('cs-user',JSON.stringify(user)); return pause(user)},current:():User|null=>{const v=localStorage.getItem('cs-user');return v?JSON.parse(v) as User:null},logout:()=>localStorage.removeItem('cs-user')};
-export const dashboardService={getSummary:()=>pause<DashboardSummary>(summary)};
-export const predictionService={list:async(filters?:Filters)=>pause(predictions.filter(p=>(!filters?.region||p.region===filters.region)&&(!filters?.category||p.crime_category===filters.category)&&(!filters?.window||p.predicted_window===filters.window)&&(!filters?.risk||p.risk_level===filters.risk))),get:(id:string)=>pause(predictions.find(p=>p.id===id))};
-export const alertService={list:()=>pause([...alerts]),acknowledge:async(id:string):Promise<Alert>=>{const a=alerts.find(x=>x.id===id);if(!a)throw new Error('Alert not found');a.status='ACKNOWLEDGED';return pause(a)},forPrediction:(id:string)=>alerts.find(a=>a.prediction_id===id)};
-export const caseService={get:(id:string)=>pause(cases.find(c=>c.id===id))};
