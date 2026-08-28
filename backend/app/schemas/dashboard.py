@@ -1,9 +1,11 @@
-from pydantic import BaseModel
-from typing import Dict
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, Dict
 
 class DashboardSummaryResponse(BaseModel):
-    total_predictions: int
-    high_risk_locations: int
-    active_alerts: int
-    acknowledged_alerts: int
-    risk_level_breakdown: Dict[str, int]
+    model_config = ConfigDict(from_attributes=True)
+
+    totalComplaints: int
+    highRiskZones: int
+    activeAlerts: int
+    atRiskAtms: int
+    risk_level_breakdown: Optional[Dict[str, int]] = None

@@ -17,6 +17,12 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    email: EmailStr
+    username: str
     name: str
     role: str
+
+class UserDocument(BaseModel):
+    username: str
+    name: str
+    role: str
+    password_hash: str

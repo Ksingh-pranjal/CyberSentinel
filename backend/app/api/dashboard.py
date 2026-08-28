@@ -11,10 +11,10 @@ async def get_dashboard_summary(current_user: TokenData = Depends(get_current_us
     db = get_database()
 
     # Query live metrics from MongoDB collections
-    total_predictions = await db.predictions.count_documents({})
-    high_risk_locations = await db.locations.count_documents({"risk_level": {"$in": ["HIGH", "CRITICAL"]}})
-    active_alerts = await db.alerts.count_documents({"status": "ACTIVE"})
-    acknowledged_alerts = await db.alerts.count_documents({"status": "ACKNOWLEDGED"})
+    total_complaints = await db.complaints.count_documents({})
+    high_risk_zones = await db.locations.count_documents({"risk_level": {"$in": ["HIGH", "CRITICAL"]}})
+    active_alerts = await db.alerts.count_documents({"status": {"$in": ["NEW", "ACTIVE"]}})
+    at_risk_atms = await db.locations.count_documents({"risk_score": {"$gte": 0.50}})
 
     # Count breakdown by risk level
     critical_count = await db.locations.count_documents({"risk_level": "CRITICAL"})
@@ -23,10 +23,10 @@ async def get_dashboard_summary(current_user: TokenData = Depends(get_current_us
     low_count = await db.locations.count_documents({"risk_level": "LOW"})
 
     return {
-        "total_predictions": total_predictions,
-        "high_risk_locations": high_risk_locations,
-        "active_alerts": active_alerts,
-        "acknowledged_alerts": acknowledged_alerts,
+        "totalComplaints": total_complaints,
+        "highRiskZones": high_risk_zones,
+        "activeAlerts": active_alerts,
+        "atRiskAtms": at_risk_atms,
         "risk_level_breakdown": {
             "CRITICAL": critical_count,
             "HIGH": high_count,
