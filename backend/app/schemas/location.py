@@ -7,8 +7,15 @@ class GeoJSONPoint(BaseModel):
 
 class LocationBase(BaseModel):
     location_id: str
+    location_name: str
     region: str
     location_metadata: Optional[Dict[str, Any]] = None
+
+class LocationCreate(LocationBase):
+    geometry: GeoJSONPoint
+    risk_score: Optional[float] = None
+    risk_level: Optional[str] = None
+    predicted_window: Optional[str] = None
 
 class LocationResponse(LocationBase):
     model_config = ConfigDict(from_attributes=True)
