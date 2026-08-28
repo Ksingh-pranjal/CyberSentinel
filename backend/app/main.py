@@ -57,3 +57,8 @@ def root_health_check():
         "status": "online",
         "message": "API with MongoDB Atlas connected"
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    from app.config import settings
+    uvicorn.run("app.main:app", host="127.0.0.1", port=settings.backend_port, reload=True)

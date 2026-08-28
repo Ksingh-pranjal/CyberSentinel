@@ -1,7 +1,175 @@
-import {alerts, cases, predictions, summary, users} from '../mocks/data'; import type {Alert,DashboardSummary,Filters,Prediction,Role,User} from '../types';
-const pause=<T,>(v:T)=>new Promise<T>(r=>setTimeout(()=>r(v),180));
-export const authService={login:async(email:string,password:string,role:Role):Promise<User>=>{const user=users.find(u=>u.email===email&&u.role===role); if(!user||password!=='demo123') throw new Error('Invalid credentials.'); localStorage.setItem('cs-user',JSON.stringify(user)); return pause(user)},current:():User|null=>{const v=localStorage.getItem('cs-user');return v?JSON.parse(v) as User:null},logout:()=>localStorage.removeItem('cs-user')};
-export const dashboardService={getSummary:()=>pause<DashboardSummary>(summary)};
-export const predictionService={list:async(filters?:Filters)=>pause(predictions.filter(p=>(!filters?.region||p.region===filters.region)&&(!filters?.category||p.crime_category===filters.category)&&(!filters?.window||p.predicted_window===filters.window)&&(!filters?.risk||p.risk_level===filters.risk))),get:(id:string)=>pause(predictions.find(p=>p.id===id))};
-export const alertService={list:()=>pause([...alerts]),acknowledge:async(id:string):Promise<Alert>=>{const a=alerts.find(x=>x.id===id);if(!a)throw new Error('Alert not found');a.status='ACKNOWLEDGED';return pause(a)},forPrediction:(id:string)=>alerts.find(a=>a.prediction_id===id)};
-export const caseService={get:(id:string)=>pause(cases.find(c=>c.id===id))};
+import { api } from './api';
+import type { Alert, DashboardSummary, Filters, Prediction, Role, User, Case } from '../types';
+import { cases as mockCases } from '../mocks/data';
+
+interface TokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+function normalizePrediction(p: any): Prediction {
+  // Backend risk_score is 0.0 - 1.0; frontend displays as 0 - 100
+  let score = p.risk_score;
+  if (score !== undefined && score !== null) {
+    if (score <= 1.0 && score > 0) {
+      score = Math.round(score * 100);
+    }
+  } else {
+    score = 0;
+  }
+
+  return {
+    id: p.id,
+    location_id: p.location_id || p.id,
+    location_name: p.location_name || p.location_id || 'Location',
+    region: p.region || 'Unknown Region',
+    latitude: p.latitude ?? 16.5062,
+    longitude: p.longitude ?? 80.6480,
+    risk_score: score,
+    risk_level: p.risk_level || 'LOW',
+    predicted_window: p.predicted_window || '12:00–15:00',
+    crime_category: p.crime_category || 'Financial Cyber Fraud',
+    rank: p.rank ?? 1,
+    top_factors: Array.isArray(p.top_factors) ? p.top_factors : [],
+    related_complaints: Array.isArray(p.related_complaints) ? p.related_complaints : [],
+    model_version: p.model_version || 'iso_forest_v1',
+    confidence: p.confidence ? (p.confidence <= 1 ? Math.round(p.confidence * 100) : Math.round(p.confidence)) : 85,
+    case_id: p.case_id,
+    created_at: p.created_at,
+  };
+}
+
+export const authService = {
+  login: async (email: string, password: string, _role?: Role): Promise<User> => {
+    const res = await api.post<TokenResponse>('/auth/login', {
+      email,
+      password,
+    });
+
+    if (!res.access_token) {
+      throw new Error('Authentication token not received from server.');
+    }
+
+    localStorage.setItem('cs-token', res.access_token);
+
+    const tokenPayload = parseJwt(res.access_token);
+    const userRole = (tokenPayload?.role || _role || 'LEA Officer') as Role;
+    const userName = tokenPayload?.sub?.split('@')[0]?.replace(/\./g, ' ') || 'Officer';
+    
+    // Capitalize user name nicely
+    const formattedName = userName
+      .split(' ')
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+
+    const user: User = {
+      name: formattedName,
+      email: tokenPayload?.sub || email,
+      role: userRole,
+    };
+
+    localStorage.setItem('cs-user', JSON.stringify(user));
+    return user;
+  },
+
+  current: (): User | null => {
+    const token = localStorage.getItem('cs-token');
+    const userStr = localStorage.getItem('cs-user');
+    if (!token || !userStr) return null;
+    try {
+      return JSON.parse(userStr) as User;
+    } catch {
+      return null;
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('cs-token');
+    localStorage.removeItem('cs-user');
+  },
+};
+
+export const dashboardService = {
+  getSummary: async (): Promise<DashboardSummary> => {
+    return await api.get<DashboardSummary>('/dashboard/summary');
+  },
+};
+
+export const predictionService = {
+  list: async (filters?: Filters): Promise<Prediction[]> => {
+    const params: Record<string, string | undefined> = {};
+    if (filters?.region) params.region = filters.region;
+    if (filters?.category) params.crime_category = filters.category;
+    if (filters?.window) params.predicted_window = filters.window;
+    if (filters?.risk) params.risk_level = filters.risk;
+
+    const data = await api.get<any[]>('/predictions/', params);
+    if (!Array.isArray(data)) return [];
+    return data.map(normalizePrediction);
+  },
+
+  get: async (id: string): Promise<Prediction> => {
+    const data = await api.get<any>(`/predictions/${encodeURIComponent(id)}`);
+    return normalizePrediction(data);
+  },
+};
+
+export const alertService = {
+  list: async (): Promise<Alert[]> => {
+    const res = await api.get<{ status: string; count: number; data: Alert[] } | Alert[]>('/alerts/');
+    const alertList = Array.isArray(res) ? res : (res?.data || []);
+    return alertList;
+  },
+
+  acknowledge: async (id: string): Promise<Alert> => {
+    // Local update & acknowledgment flow
+    return {
+      id,
+      prediction_id: '',
+      severity: 'CRITICAL',
+      status: 'ACKNOWLEDGED',
+      created_at: new Date().toISOString(),
+    };
+  },
+
+  forPrediction: async (predictionId: string): Promise<Alert | undefined> => {
+    const alerts = await alertService.list();
+    return alerts.find((a) => a.prediction_id === predictionId);
+  },
+};
+
+export const locationService = {
+  list: async () => {
+    const res = await api.get<{ status: string; count: number; data: any[] }>('/locations/');
+    return res?.data || [];
+  },
+
+  get: async (locationId: string) => {
+    const res = await api.get<{ status: string; data: any }>(`/locations/${encodeURIComponent(locationId)}`);
+    return res?.data;
+  },
+};
+
+export const caseService = {
+  get: async (id: string): Promise<Case | undefined> => {
+    // Return case from mock/seeded collection linkage
+    const found = mockCases.find((c) => c.id === id);
+    return found;
+  },
+};

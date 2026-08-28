@@ -9,7 +9,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def login(credentials: UserLogin):
     db = get_database()
     user = await db.users.find_one({"username": credentials.email})
-    if not user or not verify_password(credentials.password, user.get("password_hash", "")):
+    password_hash = user.get("password_hash", "") if user else ""
+    if not user or not password_hash or not verify_password(credentials.password, password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
