@@ -1,1 +1,0 @@
-import type {RiskLevel} from '../types'; export const getRiskLevel=(score:number):RiskLevel=>score>=80?'CRITICAL':score>=60?'HIGH':score>=40?'MEDIUM':'LOW'; export const riskClass=(risk:RiskLevel)=>`risk-${risk.toLowerCase()}`; export const riskColor=(risk:RiskLevel)=>({CRITICAL:'#e35252',HIGH:'#f59e0b',MEDIUM:'#d4a72c',LOW:'#36a578'}[risk]);
