@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import L from 'leaflet';
-import { MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
+import { Circle, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import type { Prediction } from '../types';
 import { riskColor } from '../utils/risk';
 
@@ -15,6 +15,16 @@ function Fit({ data }: { data: Prediction[] }) {
       });
     }
   }, [data, map]);
+
+  return null;
+}
+
+function FocusSelected({ prediction }: { prediction?: Prediction }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (prediction) map.flyTo([prediction.latitude, prediction.longitude], Math.max(map.getZoom(), 10), { duration: 0.45 });
+  }, [map, prediction]);
 
   return null;
 }
@@ -51,13 +61,9 @@ export function MapView({
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         <Fit data={data} />
+        <FocusSelected prediction={data.find((prediction) => prediction.id === selected)} />
         {data.map((p) => (
-          <Marker
-            key={p.id}
-            position={[p.latitude, p.longitude]}
-            eventHandlers={{ click: () => onSelect(p) }}
-            icon={markerIcon(p, selected)}
-          >
+          <Marker key={p.id} position={[p.latitude, p.longitude]} eventHandlers={{ click: () => onSelect(p) }} icon={markerIcon(p, selected)}>
             <Tooltip direction="top" offset={[0, -10]} opacity={0.96}>
               {p.location_id} · {p.risk_level} · {p.risk_score}/100
             </Tooltip>
@@ -87,6 +93,12 @@ export function MapView({
               </div>
             </Popup>
           </Marker>
+        ))}
+        {data.filter((p) => p.risk_level === 'CRITICAL' || p.risk_level === 'HIGH').map((p) => (
+          <Circle key={`${p.id}-zone`} center={[p.latitude, p.longitude]} radius={p.risk_level === 'CRITICAL' ? 12500 : 8000} pathOptions={{ color: riskColor(p.risk_level), fillColor: riskColor(p.risk_level), fillOpacity: 0.055, opacity: 0.22, weight: 1, className: 'risk-zone' }} />
+        ))}
+        {data.filter((p) => p.id === selected).map((p) => (
+          <Circle key={`${p.id}-selected`} center={[p.latitude, p.longitude]} radius={9500} pathOptions={{ color: riskColor(p.risk_level), fillOpacity: 0, opacity: 0.42, weight: 1, dashArray: '4 6' }} />
         ))}
       </MapContainer>
     </div>
