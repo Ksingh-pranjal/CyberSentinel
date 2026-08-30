@@ -128,6 +128,12 @@ export const predictionService = {
     const data = await api.get<any>(`/predictions/${encodeURIComponent(id)}`);
     return normalizePrediction(data);
   },
+
+  triggerPredictLive: async (): Promise<Prediction[]> => {
+    const data = await api.post<any[]>('/predictions/predict-live');
+    if (!Array.isArray(data)) return [];
+    return data.map(normalizePrediction);
+  },
 };
 
 export const alertService = {

@@ -82,15 +82,34 @@ export function Heatmap() {
   return (
     <div className="page">
       <PageHeader eyebrow="GIS INTELLIGENCE" title="Risk heatmap">
-        <button
-          className="btn secondary"
-          onClick={() => {
-            setFilters(blank);
-            setSelected(undefined);
-          }}
-        >
-          <RefreshCw size={16} /> Reset operational view
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            className="btn"
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const data = await predictionService.triggerPredictLive();
+                setAll(data);
+              } catch (err: any) {
+                setError(err?.message || 'Failed to trigger live ML prediction.');
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <RefreshCw size={16} /> Run Live ML Prediction
+          </button>
+          <button
+            className="btn secondary"
+            onClick={() => {
+              setFilters(blank);
+              setSelected(undefined);
+              fetchPredictions();
+            }}
+          >
+            <RefreshCw size={16} /> Reset operational view
+          </button>
+        </div>
       </PageHeader>
       <p className="demo-banner">
         Live GIS Predictive Threat Forecasting. Markers represent ML risk scores across monitored bank and ATM clusters.

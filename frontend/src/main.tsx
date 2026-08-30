@@ -1,1 +1,15 @@
-import React from 'react';import ReactDOM from 'react-dom/client';import {BrowserRouter,Navigate,Route,Routes} from 'react-router-dom';import 'leaflet/dist/leaflet.css';import './styles.css';import {authService} from './services/services';import {DashboardLayout} from './layouts/DashboardLayout';import {Login} from './pages/Login';import {Dashboard} from './pages/Dashboard';import {Heatmap} from './pages/Heatmap';import {PredictionDetail} from './pages/PredictionDetail';import {Alerts} from './pages/Alerts';import {Investigation} from './pages/Investigation';import {Settings} from './pages/Settings';function Protected(){return authService.current()?<DashboardLayout/>:<Navigate to="/login" replace/>}function App(){return <Routes><Route path="/login" element={authService.current()?<Navigate to="/dashboard" replace/>:<Login/>}/><Route element={<Protected/>}><Route path="/dashboard" element={<Dashboard/>}/><Route path="/heatmap" element={<Heatmap/>}/><Route path="/predictions/:id" element={<PredictionDetail/>}/><Route path="/alerts" element={<Alerts/>}/><Route path="/investigations/:id" element={<Investigation/>}/><Route path="/settings" element={<Settings/>}/></Route><Route path="*" element={<Navigate to="/dashboard" replace/>}/></Routes>}ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><App/></BrowserRouter></React.StrictMode>);
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css';
+import './styles.css';
+import 'leaflet/dist/leaflet.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </StrictMode>
+);
