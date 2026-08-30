@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield } from 'lucide-react';
 import { authService } from '../services/services';
 import type { Role } from '../types';
 
@@ -34,7 +33,6 @@ export function Login() {
     <div className="login">
       <section className="login-intro">
         <div className="brand">
-          <Shield />
           <span>
             CYBER<span>SENTINEL</span>
           </span>

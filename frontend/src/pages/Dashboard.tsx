@@ -110,13 +110,13 @@ export function Dashboard() {
           <div className="chart">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trend}>
-                <XAxis dataKey="day" stroke="#8090a8" />
-                <YAxis domain={[0, 100]} stroke="#8090a8" />
-                <Tooltip />
+                <XAxis dataKey="day" stroke="#6F7772" tick={{ fill: '#A6ADA8', fontSize: 11 }} />
+                <YAxis domain={[0, 100]} stroke="#6F7772" tick={{ fill: '#A6ADA8', fontSize: 11 }} />
+                <Tooltip contentStyle={{ background: '#191C1A', border: '1px solid #292D2A', borderRadius: '6px' }} labelStyle={{ color: '#F1F3F1' }} itemStyle={{ color: '#48D878' }} />
                 <Line
                   type="monotone"
                   dataKey="risk"
-                  stroke="#4bb3fd"
+                  stroke="#48D878"
                   strokeWidth={3}
                 />
               </LineChart>
